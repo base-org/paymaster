@@ -2,7 +2,6 @@
 pragma solidity 0.8.20;
 
 /* solhint-disable reason-string */
-/* solhint-disable no-inline-assembly */
 
 import "@account-abstraction/core/BasePaymaster.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
