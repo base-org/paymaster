@@ -98,7 +98,8 @@ contract Paymaster is BasePaymaster {
     }
 
     receive() external payable {
-        (bool callSuccess, ) = payable(address(entryPoint)).call{value: msg.value}("");
+        // use address(this).balance rather than msg.value in case of force-send
+        (bool callSuccess, ) = payable(address(entryPoint)).call{value: address(this).balance}("");
         require(callSuccess, "Deposit failed");
     }
 }
