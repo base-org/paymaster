@@ -68,9 +68,8 @@ contract Paymaster is BasePaymaster {
     function _validatePaymasterUserOp(UserOperation calldata userOp, bytes32 /*userOpHash*/, uint256 /*requiredPreFund*/)
     internal view override returns (bytes memory context, uint256 validationData) {
         (uint48 validUntil, uint48 validAfter, bytes calldata signature) = parsePaymasterAndData(userOp.paymasterAndData);
-        // ECDSA library supports both 64 and 65-byte long signatures.
-        // we only "require" it here so that the revert reason on invalid signature will be of "Paymaster", and not "ECDSA"
-        require(signature.length == 64 || signature.length == 65, "Paymaster: invalid signature length in paymasterAndData");
+        // Only support 65-byte signatures, to avoid potential replay attacks.
+        require(signature.length == 65, "Paymaster: invalid signature length in paymasterAndData");
         bytes32 hash = ECDSA.toEthSignedMessageHash(getHash(userOp, validUntil, validAfter));
 
         // don't revert on signature failure: return SIG_VALIDATION_FAILED
