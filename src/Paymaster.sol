@@ -66,10 +66,8 @@ contract Paymaster is BasePaymaster {
      * paymasterAndData[20:84] : abi.encode(validUntil, validAfter)
      * paymasterAndData[84:] : signature
      */
-    function _validatePaymasterUserOp(UserOperation calldata userOp, bytes32 /*userOpHash*/, uint256 requiredPreFund)
+    function _validatePaymasterUserOp(UserOperation calldata userOp, bytes32 /*userOpHash*/, uint256 /*requiredPreFund*/)
     internal view override returns (bytes memory context, uint256 validationData) {
-        (requiredPreFund);
-
         (uint48 validUntil, uint48 validAfter, bytes calldata signature) = parsePaymasterAndData(userOp.paymasterAndData);
         // ECDSA library supports both 64 and 65-byte long signatures.
         // we only "require" it here so that the revert reason on invalid signature will be of "Paymaster", and not "ECDSA"
