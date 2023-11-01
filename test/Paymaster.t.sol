@@ -41,6 +41,16 @@ contract PaymasterTest is Test {
         new Paymaster(entrypoint, address(this));
     }
 
+    function test_zeroAddressSetVerifyingSigner() public {
+        vm.expectRevert("Paymaster: verifyingSigner cannot be address(0)");
+        paymaster.setVerifyingSigner(address(0));
+    }
+
+    function test_ownerSetVerifyingSigner() public {
+        vm.expectRevert("Paymaster: verifyingSigner cannot be the owner");
+        paymaster.setVerifyingSigner(address(this));
+    }
+
     function test_entryPointNotAContract() public {
         vm.expectRevert("Paymaster: passed _entryPoint is not currently a contract");
         new Paymaster(IEntryPoint(address(0x1234)), PAYMASTER_SIGNER);
