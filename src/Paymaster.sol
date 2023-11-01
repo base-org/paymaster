@@ -93,6 +93,10 @@ contract Paymaster is BasePaymaster {
         verifyingSigner = _verifyingSigner;
     }
 
+    function renounceOwnership() public override view onlyOwner {
+        revert("Paymaster: renouncing ownership is not allowed");
+    }
+
     receive() external payable {
         deposit();
     }

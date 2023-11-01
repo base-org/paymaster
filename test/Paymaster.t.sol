@@ -41,6 +41,11 @@ contract PaymasterTest is Test {
         new Paymaster(entrypoint, address(this));
     }
 
+    function test_noRenounceOwnership() public {
+        vm.expectRevert("Paymaster: renouncing ownership is not allowed");
+        paymaster.renounceOwnership();
+    }
+
     function test_parsePaymasterAndData() public {
         bytes memory paymasterAndData = abi.encodePacked(address(paymaster), abi.encode(MOCK_VALID_UNTIL, MOCK_VALID_AFTER), MOCK_SIG);
         (uint48 validUntil, uint48 validAfter, bytes memory signature) = paymaster.parsePaymasterAndData(paymasterAndData);
