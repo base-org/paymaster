@@ -16,7 +16,6 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
  * - the account checks a signature to prove identity and account ownership.
  */
 contract Paymaster is BasePaymaster {
-    using ECDSA for bytes32;
     using UserOperationLib for UserOperation;
 
     address public verifyingSigner;
