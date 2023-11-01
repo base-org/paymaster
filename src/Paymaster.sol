@@ -86,7 +86,8 @@ contract Paymaster is BasePaymaster {
         return ("", _packValidationData(false, validUntil, validAfter));
     }
 
-    function parsePaymasterAndData(bytes calldata paymasterAndData) public pure returns(uint48 validUntil, uint48 validAfter, bytes calldata signature) {
+    function parsePaymasterAndData(bytes calldata paymasterAndData)
+    public pure returns(uint48 validUntil, uint48 validAfter, bytes calldata signature) {
         (validUntil, validAfter) = abi.decode(paymasterAndData[VALID_TIMESTAMP_OFFSET:SIGNATURE_OFFSET],(uint48, uint48));
         signature = paymasterAndData[SIGNATURE_OFFSET:];
     }
