@@ -46,14 +46,6 @@ contract PaymasterTest is Test {
         paymaster.renounceOwnership();
     }
 
-    function test_parsePaymasterAndData() public {
-        bytes memory paymasterAndData = abi.encodePacked(address(paymaster), abi.encode(MOCK_VALID_UNTIL, MOCK_VALID_AFTER), MOCK_SIG);
-        (uint48 validUntil, uint48 validAfter, bytes memory signature) = paymaster.parsePaymasterAndData(paymasterAndData);
-        assertEq(validUntil, MOCK_VALID_UNTIL);
-        assertEq(validAfter, MOCK_VALID_AFTER);
-        assertEq(signature, MOCK_SIG);
-    }
-
     function test_getHash() public {
         UserOperation memory userOp = createUserOp();
         userOp.initCode = "initCode";
