@@ -40,10 +40,9 @@ contract Paymaster is BasePaymaster {
     function getHash(UserOperation calldata userOp, uint48 validUntil, uint48 validAfter)
     public view returns (bytes32) {
         // can't use userOp.hash(), since it contains also the paymasterAndData itself.
-        address sender = userOp.getSender();
         return keccak256(
             abi.encode(
-                sender,
+                userOp.getSender(),
                 userOp.nonce,
                 keccak256(userOp.initCode),
                 keccak256(userOp.callData),
