@@ -123,6 +123,13 @@ contract PaymasterTest is Test {
         entrypoint.simulateValidation(userOp);
     }
 
+    function test_receive() public {
+        assertEq(0, entrypoint.balanceOf(address(paymaster)));
+        (bool callSuccess, ) = address(paymaster).call{value: 1 ether}("");
+        require(callSuccess, "Receive failed");
+        assertEq(1 ether, entrypoint.balanceOf(address(paymaster)));
+    }
+
     function createUserOp() public view returns (UserOperation memory) {
         UserOperation memory userOp;
         userOp.sender = address(account);
