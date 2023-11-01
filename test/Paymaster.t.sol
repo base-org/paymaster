@@ -31,6 +31,16 @@ contract PaymasterTest is Test {
         account = factory.createAccount(ACCOUNT_OWNER, 0);
     }
 
+    function test_zeroAddressVerifyingSigner() public {
+        vm.expectRevert("Paymaster: verifyingSigner cannot be address(0)");
+        new Paymaster(entrypoint, address(0));
+    }
+
+    function test_ownerVerifyingSigner() public {
+        vm.expectRevert("Paymaster: verifyingSigner cannot be the owner");
+        new Paymaster(entrypoint, address(this));
+    }
+
     function test_parsePaymasterAndData() public {
         bytes memory paymasterAndData = abi.encodePacked(address(paymaster), abi.encode(MOCK_VALID_UNTIL, MOCK_VALID_AFTER), MOCK_SIG);
         (uint48 validUntil, uint48 validAfter, bytes memory signature) = paymaster.parsePaymasterAndData(paymasterAndData);

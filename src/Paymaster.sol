@@ -25,6 +25,8 @@ contract Paymaster is BasePaymaster {
     uint256 private constant SIGNATURE_OFFSET = VALID_TIMESTAMP_OFFSET + 64;
 
     constructor(IEntryPoint _entryPoint, address _verifyingSigner) BasePaymaster(_entryPoint) {
+        require(_verifyingSigner != address(0), "Paymaster: verifyingSigner cannot be address(0)");
+        require(_verifyingSigner != msg.sender, "Paymaster: verifyingSigner cannot be the owner");
         verifyingSigner = _verifyingSigner;
     }
 
