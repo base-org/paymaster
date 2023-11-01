@@ -43,8 +43,8 @@ contract Paymaster is BasePaymaster {
             abi.encode(
                 userOp.getSender(),
                 userOp.nonce,
-                keccak256(userOp.initCode),
-                keccak256(userOp.callData),
+                calldataKeccak(userOp.initCode),
+                calldataKeccak(userOp.callData),
                 userOp.callGasLimit,
                 userOp.verificationGasLimit,
                 userOp.preVerificationGas,

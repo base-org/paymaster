@@ -49,6 +49,14 @@ contract PaymasterTest is Test {
         assertEq(signature, MOCK_SIG);
     }
 
+    function test_getHash() public {
+        UserOperation memory userOp = createUserOp();
+        userOp.initCode = "initCode";
+        userOp.callData = "callData";
+        bytes32 hash = paymaster.getHash(userOp, MOCK_VALID_UNTIL, MOCK_VALID_AFTER);
+        assertEq(hash, 0xd3a02a83ba925f913230b3c805cd623d66f85d0d2548a6bfb5dea3aec9757630);
+    }
+
     function test_setVerifyingSignerOnlyOwner() public {
         vm.broadcast(ACCOUNT_OWNER);
         vm.expectRevert("Ownable: caller is not the owner");
@@ -59,7 +67,7 @@ contract PaymasterTest is Test {
         UserOperation memory userOp = createUserOp();
         signUserOp(userOp);
 
-        vm.expectRevert(createEncodedValidationResult(false, 57193));
+        vm.expectRevert(createEncodedValidationResult(false, 57126));
         entrypoint.simulateValidation(userOp);
     }
 
@@ -71,7 +79,7 @@ contract PaymasterTest is Test {
         userOp.paymasterAndData = abi.encodePacked(address(paymaster), abi.encode(MOCK_VALID_UNTIL, MOCK_VALID_AFTER), r, s, v);
         signUserOp(userOp);
 
-        vm.expectRevert(createEncodedValidationResult(false, 55193));
+        vm.expectRevert(createEncodedValidationResult(false, 55126));
         entrypoint.simulateValidation(userOp);
     }
 
@@ -81,7 +89,7 @@ contract PaymasterTest is Test {
         userOp.paymasterAndData = abi.encodePacked(address(paymaster), abi.encode(MOCK_VALID_UNTIL, MOCK_VALID_AFTER), r, s, v);
         signUserOp(userOp);
 
-        vm.expectRevert(createEncodedValidationResult(true, 57199));
+        vm.expectRevert(createEncodedValidationResult(true, 57132));
         entrypoint.simulateValidation(userOp);
     }
 
