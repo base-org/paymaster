@@ -26,6 +26,7 @@ contract Paymaster is BasePaymaster {
     constructor(IEntryPoint _entryPoint, address _verifyingSigner) BasePaymaster(_entryPoint) {
         require(_verifyingSigner != address(0), "Paymaster: verifyingSigner cannot be address(0)");
         require(_verifyingSigner != msg.sender, "Paymaster: verifyingSigner cannot be the owner");
+        require(address(_entryPoint).code.length > 0, "Paymaster: passed _entryPoint is not currently a contract");
         verifyingSigner = _verifyingSigner;
     }
 

@@ -41,6 +41,11 @@ contract PaymasterTest is Test {
         new Paymaster(entrypoint, address(this));
     }
 
+    function test_entryPointNotAContract() public {
+        vm.expectRevert("Paymaster: passed _entryPoint is not currently a contract");
+        new Paymaster(IEntryPoint(address(0x1234)), PAYMASTER_SIGNER);
+    }
+
     function test_noRenounceOwnership() public {
         vm.expectRevert("Paymaster: renouncing ownership is not allowed");
         paymaster.renounceOwnership();
