@@ -19,7 +19,7 @@ contract Paymaster is BasePaymaster {
     using ECDSA for bytes32;
     using UserOperationLib for UserOperation;
 
-    address public immutable verifyingSigner;
+    address public verifyingSigner;
 
     uint256 private constant VALID_TIMESTAMP_OFFSET = 20;
     uint256 private constant SIGNATURE_OFFSET = VALID_TIMESTAMP_OFFSET + 64;
@@ -88,6 +88,10 @@ contract Paymaster is BasePaymaster {
     function parsePaymasterAndData(bytes calldata paymasterAndData) public pure returns(uint48 validUntil, uint48 validAfter, bytes calldata signature) {
         (validUntil, validAfter) = abi.decode(paymasterAndData[VALID_TIMESTAMP_OFFSET:SIGNATURE_OFFSET],(uint48, uint48));
         signature = paymasterAndData[SIGNATURE_OFFSET:];
+    }
+
+    function setVerifyingSigner(address _verifyingSigner) public onlyOwner {
+        verifyingSigner = _verifyingSigner;
     }
 
     receive() external payable {

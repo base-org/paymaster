@@ -39,11 +39,29 @@ contract PaymasterTest is Test {
         assertEq(signature, MOCK_SIG);
     }
 
+    function test_setVerifyingSignerOnlyOwner() public {
+        vm.broadcast(ACCOUNT_OWNER);
+        vm.expectRevert("Ownable: caller is not the owner");
+        paymaster.setVerifyingSigner(ACCOUNT_OWNER);
+    }
+
     function test_validatePaymasterUserOpValidSignature() public {
         UserOperation memory userOp = createUserOp();
         signUserOp(userOp);
 
-        vm.expectRevert(createEncodedValidationResult(false));
+        vm.expectRevert(createEncodedValidationResult(false, 57198));
+        entrypoint.simulateValidation(userOp);
+    }
+
+    function test_validatePaymasterUserOpUpdatedSigner() public {
+        paymaster.setVerifyingSigner(ACCOUNT_OWNER);
+
+        UserOperation memory userOp = createUserOp();
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(ACCOUNT_OWNER_KEY, ECDSA.toEthSignedMessageHash(paymaster.getHash(userOp, MOCK_VALID_UNTIL, MOCK_VALID_AFTER)));
+        userOp.paymasterAndData = abi.encodePacked(address(paymaster), abi.encode(MOCK_VALID_UNTIL, MOCK_VALID_AFTER), r, s, v);
+        signUserOp(userOp);
+
+        vm.expectRevert(createEncodedValidationResult(false, 55198));
         entrypoint.simulateValidation(userOp);
     }
 
@@ -53,7 +71,7 @@ contract PaymasterTest is Test {
         userOp.paymasterAndData = abi.encodePacked(address(paymaster), abi.encode(MOCK_VALID_UNTIL, MOCK_VALID_AFTER), r, s, v);
         signUserOp(userOp);
 
-        vm.expectRevert(createEncodedValidationResult(true));
+        vm.expectRevert(createEncodedValidationResult(true, 57204));
         entrypoint.simulateValidation(userOp);
     }
 
@@ -99,11 +117,7 @@ contract PaymasterTest is Test {
         userOp.signature = abi.encodePacked(r, s, v);
     }
 
-    function createEncodedValidationResult(bool sigFailed) public pure returns (bytes memory) {
-        uint256 preOpGas = 55114;
-        if (sigFailed) {
-            preOpGas = 55120;
-        }
+    function createEncodedValidationResult(bool sigFailed, uint256 preOpGas) public pure returns (bytes memory) {
         uint256 prefund = 0;
         bytes memory paymasterContext = "";
         return abi.encodeWithSelector(
