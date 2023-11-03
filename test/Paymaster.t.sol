@@ -61,6 +61,16 @@ contract PaymasterTest is Test {
         paymaster.renounceOwnership();
     }
 
+    function test_zeroAddressTransferOwnership() public {
+        vm.expectRevert("Paymaster: owner cannot be address(0)");
+        paymaster.transferOwnership(address(0));
+    }
+
+    function test_verifyingSignerTransferOwnership() public {
+        vm.expectRevert("Paymaster: owner cannot be the verifyingSigner");
+        paymaster.transferOwnership(PAYMASTER_SIGNER);
+    }
+
     function test_getHash() public {
         UserOperation memory userOp = createUserOp();
         userOp.initCode = "initCode";

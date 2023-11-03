@@ -97,6 +97,12 @@ contract Paymaster is BasePaymaster {
         revert("Paymaster: renouncing ownership is not allowed");
     }
 
+    function transferOwnership(address newOwner) public override onlyOwner {
+        require(newOwner != address(0), "Paymaster: owner cannot be address(0)");
+        require(newOwner != verifyingSigner, "Paymaster: owner cannot be the verifyingSigner");
+        _transferOwnership(newOwner);
+    }
+
     receive() external payable {
         // use address(this).balance rather than msg.value in case of force-send
         (bool callSuccess, ) = payable(address(entryPoint)).call{value: address(this).balance}("");
