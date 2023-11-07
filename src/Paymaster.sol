@@ -18,14 +18,16 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 contract Paymaster is BasePaymaster {
     using UserOperationLib for UserOperation;
 
-    address public verifyingSigner;
+    address public immutable verifyingSigner;
 
     uint256 private constant VALID_TIMESTAMP_OFFSET = 20;
     uint256 private constant SIGNATURE_OFFSET = VALID_TIMESTAMP_OFFSET + 64;
 
     constructor(IEntryPoint _entryPoint, address _verifyingSigner) BasePaymaster(_entryPoint) Ownable() {
         require(address(_entryPoint).code.length > 0, "Paymaster: passed _entryPoint is not currently a contract");
-        setVerifyingSigner(_verifyingSigner);
+        require(_verifyingSigner != address(0), "Paymaster: verifyingSigner cannot be address(0)");
+        require(_verifyingSigner != msg.sender, "Paymaster: verifyingSigner cannot be the owner");
+        verifyingSigner = _verifyingSigner;
     }
 
     /**
@@ -85,12 +87,6 @@ contract Paymaster is BasePaymaster {
     internal pure returns(uint48 validUntil, uint48 validAfter, bytes calldata signature) {
         (validUntil, validAfter) = abi.decode(paymasterAndData[VALID_TIMESTAMP_OFFSET:SIGNATURE_OFFSET],(uint48, uint48));
         signature = paymasterAndData[SIGNATURE_OFFSET:];
-    }
-
-    function setVerifyingSigner(address _verifyingSigner) public onlyOwner {
-        require(_verifyingSigner != address(0), "Paymaster: verifyingSigner cannot be address(0)");
-        require(_verifyingSigner != msg.sender, "Paymaster: verifyingSigner cannot be the owner");
-        verifyingSigner = _verifyingSigner;
     }
 
     function renounceOwnership() public override view onlyOwner {
