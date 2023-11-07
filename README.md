@@ -47,11 +47,14 @@ curl "https://paymaster.base.org" \
 }
 '
 ```
-3. Call estimate gas on your bundler of choice.
-4. Add some headroom to make room for the paymaster verification gas. In our testing we've found the following values work, but it would depend on your bundler:
+3. If the request is successful and the response contains a hex-encoded byte array, use that as the `paymasterAndData` field in the userOp for gas estimation in step 4.
+Note that this is a dummy signature that won't be accepted by the paymaster, except for gas estimation.
+If an error is returned or the result is empty, the paymaster is not available for the given operation or chain. You can stop here and choose to proceed with another paymaster or self-funding the user operation.
+4. Call estimate gas on your bundler of choice.
+5. Add some headroom to make room for additional paymaster verification gas. In our testing we've found the following values work, but it would depend on your bundler:
    1. `op.PreVerificationGas = estimate.PreVerificationGas + 2000`
    2. `op.VerificationGasLimit = estimate.VerificationGasLimit + 4000`
-5. Call `eth_paymasterAndDataForUserOperation` JSON-RPC method on https://paymaster.base.org. Parameters:
+6. Call `eth_paymasterAndDataForUserOperation` JSON-RPC method on https://paymaster.base.org. Parameters:
    1. `Object` - the unsigned user operation
    2. `string` - the address of the entrypoint contract
    3. `string` - the chain ID, in hexadecimal
@@ -81,8 +84,8 @@ curl "https://paymaster.base.org" \
 }
 '
 ```
-6. If the request is successful and the response contains a hex-encoded byte array, use that as the `paymasterAndData` field in the userOp.
+7. If the request is successful and the response contains a hex-encoded byte array, use that as the `paymasterAndData` field in the userOp.
 If an error is returned or the result is empty, the paymaster is not available for the given operation or chain. You can choose to proceed with another paymaster or self-funding the user operation.
-7. Sign the user operation, and submit to your bundler of choice.
+8. Sign the user operation, and submit to your bundler of choice.
 
-Note that the `paymasterAndData` returned in step 4 contains a signature of the provided userOp, so any modification of the userOp post step 4 (except for the `sig` field) will result in the paymaster rejecting the operation.
+Note that the `paymasterAndData` returned in step 6 contains a signature of the provided userOp, so any modification of the userOp post step 6 (except for the `sig` field) will result in the paymaster rejecting the operation.
