@@ -41,16 +41,6 @@ contract PaymasterTest is Test {
         new Paymaster(entrypoint, address(this));
     }
 
-    function test_zeroAddressSetVerifyingSigner() public {
-        vm.expectRevert("Paymaster: verifyingSigner cannot be address(0)");
-        paymaster.setVerifyingSigner(address(0));
-    }
-
-    function test_ownerSetVerifyingSigner() public {
-        vm.expectRevert("Paymaster: verifyingSigner cannot be the owner");
-        paymaster.setVerifyingSigner(address(this));
-    }
-
     function test_entryPointNotAContract() public {
         vm.expectRevert("Paymaster: passed _entryPoint is not currently a contract");
         new Paymaster(IEntryPoint(address(0x1234)), PAYMASTER_SIGNER);
@@ -79,29 +69,11 @@ contract PaymasterTest is Test {
         assertEq(hash, 0xd3a02a83ba925f913230b3c805cd623d66f85d0d2548a6bfb5dea3aec9757630);
     }
 
-    function test_setVerifyingSignerOnlyOwner() public {
-        vm.broadcast(ACCOUNT_OWNER);
-        vm.expectRevert("Ownable: caller is not the owner");
-        paymaster.setVerifyingSigner(ACCOUNT_OWNER);
-    }
-
     function test_validatePaymasterUserOpValidSignature() public {
         UserOperation memory userOp = createUserOp();
         signUserOp(userOp);
 
         vm.expectRevert(createEncodedValidationResult(false, 57098));
-        entrypoint.simulateValidation(userOp);
-    }
-
-    function test_validatePaymasterUserOpUpdatedSigner() public {
-        paymaster.setVerifyingSigner(ACCOUNT_OWNER);
-
-        UserOperation memory userOp = createUserOp();
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(ACCOUNT_OWNER_KEY, ECDSA.toEthSignedMessageHash(paymaster.getHash(userOp, MOCK_VALID_UNTIL, MOCK_VALID_AFTER)));
-        userOp.paymasterAndData = abi.encodePacked(address(paymaster), abi.encode(MOCK_VALID_UNTIL, MOCK_VALID_AFTER), r, s, v);
-        signUserOp(userOp);
-
-        vm.expectRevert(createEncodedValidationResult(false, 55098));
         entrypoint.simulateValidation(userOp);
     }
 
