@@ -73,7 +73,7 @@ contract PaymasterTest is Test {
         UserOperation memory userOp = createUserOp();
         signUserOp(userOp);
 
-        vm.expectRevert(createEncodedValidationResult(false, 57098));
+        vm.expectRevert(createEncodedValidationResult(false, 55014));
         entrypoint.simulateValidation(userOp);
     }
 
@@ -83,7 +83,7 @@ contract PaymasterTest is Test {
         userOp.paymasterAndData = abi.encodePacked(address(paymaster), abi.encode(MOCK_VALID_UNTIL, MOCK_VALID_AFTER), r, s, v);
         signUserOp(userOp);
 
-        vm.expectRevert(createEncodedValidationResult(true, 57104));
+        vm.expectRevert(createEncodedValidationResult(true, 55020));
         entrypoint.simulateValidation(userOp);
     }
 
