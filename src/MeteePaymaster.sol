@@ -85,7 +85,7 @@ contract MeteePaymaster is BasePaymaster {
 
     function _postOp(PostOpMode mode, bytes calldata /*context*/, uint256 actualGasCost) internal override {
         if (mode != PostOpMode.postOpReverted) {
-            metaPaymaster.fund(actualGasCost + 3453969250695);
+            metaPaymaster.fund(address(this), actualGasCost + 3453969250695);
         }
     }
 

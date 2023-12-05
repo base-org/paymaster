@@ -6,10 +6,11 @@ pragma solidity 0.8.20;
 import "@account-abstraction/interfaces/IEntryPoint.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@solady/utils/SafeTransferLib.sol";
 
 contract MetaPaymaster is OwnableUpgradeable {
     IEntryPoint public entryPoint;
-    mapping(address => uint256) public balances;
+    mapping(address => uint256) public balanceOf;
     uint256 public total;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -22,40 +23,29 @@ contract MetaPaymaster is OwnableUpgradeable {
         entryPoint = _entryPoint;
     }
 
-    function fund(uint256 actualGasCost) external returns (bool) {
-        if (address(this).balance < actualGasCost) {
-            return false;
-        }
-        if (balances[msg.sender] < actualGasCost) {
-            return false;
-        }
+    function willFund(uint256 actualGasCost) public view returns (bool) {
+        return balanceOf[msg.sender] >= actualGasCost && address(this).balance >= actualGasCost;
+    }
+
+    function fund(address paymaster, uint256 actualGasCost) external {
+        require(balanceOf[msg.sender] >= actualGasCost);
         total -= actualGasCost;
-        balances[msg.sender] -= actualGasCost;
-        entryPoint.depositTo{value: actualGasCost}(msg.sender);
-        return true;
-    }
-
-    function balance() public view returns (uint256) {
-        return balances[msg.sender];
-    }
-
-    function balanceOf(address account) public view returns (uint256) {
-        return balances[account];
+        balanceOf[msg.sender] -= actualGasCost;
+        entryPoint.depositTo{value: actualGasCost}(paymaster);
     }
 
     function depositTo(address account) public payable {
         total += msg.value;
-        balances[account] += msg.value;
+        balanceOf[account] += msg.value;
     }
 
     function setBalance(address account, uint256 amount) public onlyOwner {
-        total += amount - balances[account];
-        balances[account] = amount;
+        total += amount - balanceOf[account];
+        balanceOf[account] = amount;
     }
 
     function withdrawTo(address payable withdrawAddress, uint256 withdrawAmount) public onlyOwner {
-        (bool success,) = withdrawAddress.call{value : withdrawAmount}("");
-        require(success, "failed to withdraw");
+        SafeTransferLib.safeTransferETH(withdrawAddress, withdrawAmount);
     }
 
     receive() external payable {}
