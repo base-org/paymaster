@@ -63,10 +63,11 @@ contract PaymasterTest is Test {
 
     function test_getHash() public {
         UserOperation memory userOp = createUserOp();
+        userOp.sender = ACCOUNT_OWNER;
         userOp.initCode = "initCode";
         userOp.callData = "callData";
         bytes32 hash = paymaster.getHash(userOp, MOCK_VALID_UNTIL, MOCK_VALID_AFTER);
-        assertEq(hash, 0xd3a02a83ba925f913230b3c805cd623d66f85d0d2548a6bfb5dea3aec9757630);
+        assertEq(hash, 0x1f6a1f43ed14fbbfa7bc28cdb6847b602be224a706e76955a5066e06a1823d72);
     }
 
     function test_validatePaymasterUserOpValidSignature() public {
