@@ -24,6 +24,7 @@ contract MeteePaymaster is BasePaymaster {
 
     uint256 private constant VALID_TIMESTAMP_OFFSET = 20;
     uint256 private constant SIGNATURE_OFFSET = VALID_TIMESTAMP_OFFSET + 64;
+    uint256 private constant POST_OP_OVERHEAD = 34982;
 
     constructor(IEntryPoint _entryPoint, address _verifyingSigner, MetaPaymaster _metaPaymaster) BasePaymaster(_entryPoint) Ownable() {
         verifyingSigner = _verifyingSigner;
@@ -80,13 +81,19 @@ contract MeteePaymaster is BasePaymaster {
 
         // no need for other on-chain validation: entire UserOp should have been checked
         // by the external service prior to signing it.
-        return (" ", _packValidationData(false, validUntil, validAfter));
+        return (abi.encode(userOp.maxFeePerGas, userOp.maxPriorityFeePerGas), _packValidationData(false, validUntil, validAfter));
     }
 
-    function _postOp(PostOpMode mode, bytes calldata /*context*/, uint256 actualGasCost) internal override {
+    function _postOp(PostOpMode mode, bytes calldata context, uint256 actualGasCost) internal override {
         if (mode != PostOpMode.postOpReverted) {
-            metaPaymaster.fund(address(this), actualGasCost + 3453969250695);
+            (uint256 maxFeePerGas, uint256 maxPriorityFeePerGas) = abi.decode(context, (uint256, uint256));
+            uint256 gasPrice = min(maxFeePerGas, maxPriorityFeePerGas + block.basefee);
+            metaPaymaster.fund(address(this), actualGasCost + POST_OP_OVERHEAD*gasPrice);
         }
+    }
+
+    function min(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a < b ? a : b;
     }
 
     function parsePaymasterAndData(bytes calldata paymasterAndData)
