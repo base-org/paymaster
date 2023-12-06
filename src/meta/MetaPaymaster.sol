@@ -2,7 +2,6 @@
 pragma solidity 0.8.20;
 
 import "@account-abstraction/interfaces/IEntryPoint.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@solady/utils/SafeTransferLib.sol";
 
