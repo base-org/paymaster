@@ -23,8 +23,8 @@ contract MetaPaymaster is OwnableUpgradeable {
         entryPoint = _entryPoint;
     }
 
-    function willFund(uint256 actualGasCost) public view returns (bool) {
-        return balanceOf[msg.sender] >= actualGasCost && address(this).balance >= actualGasCost;
+    function willFund(address msgSender, uint256 actualGasCost) public view returns (bool) {
+        return balanceOf[msgSender] >= actualGasCost && address(this).balance >= actualGasCost;
     }
 
     function fund(address paymaster, uint256 actualGasCost) external {
