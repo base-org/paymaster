@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
-import "../src/MetaPaymaster.sol";
+import "../src/meta/MetaPaymaster.sol";
 import "@account-abstraction/interfaces/IEntryPoint.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";

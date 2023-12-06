@@ -1,7 +1,5 @@
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
-
-/* solhint-disable reason-string */
 
 import "@account-abstraction/interfaces/IEntryPoint.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
