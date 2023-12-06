@@ -7,7 +7,7 @@ import "@account-abstraction/interfaces/IEntryPoint.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-// This script deploys a Paymaster
+// This script deploys a Paymaster and sets the deployer as the owner address
 contract DeployPaymaster is Script {
     address entryPoint = 0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789;
 
