@@ -89,3 +89,9 @@ If an error is returned or the result is empty, the paymaster is not available f
 8. Sign the user operation, and submit to your bundler of choice.
 
 Note that the `paymasterAndData` returned in step 6 contains a signature of the provided userOp, so any modification of the userOp post step 6 (except for the `sig` field) will result in the paymaster rejecting the operation.
+
+## Deploying and using your own paymaster
+
+If you want to deploy your own paymaster, you can deploy [paymaster.sol](./src/paymaster.sol) to your chain of choice.
+In order to generate signatures for your paymaster, there's a Golang package in the [signer](./signer) directory that allows you to sign userOperations that will be accepted by the paymaster (call `UserOperation.PaymasterSign`).
+Of course you can also rewrite this in your language of choice; the Golang package will provide a good example.
