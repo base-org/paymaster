@@ -92,5 +92,13 @@ contract MetaPaymaster is OwnableUpgradeable {
         SafeTransferLib.safeTransferETH(withdrawAddress, withdrawAmount);
     }
 
+    /**
+     * @notice Sets the entrypoint.
+     * @param _entryPoint New entrypoint
+     */
+    function setEntryPoint(IEntryPoint _entryPoint) public onlyOwner {
+        entryPoint = _entryPoint;
+    }
+
     receive() external payable {}
 }
