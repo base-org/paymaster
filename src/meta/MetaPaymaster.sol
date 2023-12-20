@@ -75,11 +75,7 @@ contract MetaPaymaster is OwnableUpgradeable {
      * @param amount The amount to set the balance to.
      */
     function setBalance(address account, uint256 amount) public onlyOwner {
-        if (amount > balanceOf[account]) {
-            total += amount - balanceOf[account];
-        } else {
-            total -= balanceOf[account] - amount;
-        }
+        total = total + amount - balanceOf[account];
         balanceOf[account] = amount;
     }
 
