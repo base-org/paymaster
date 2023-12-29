@@ -92,6 +92,6 @@ Note that the `paymasterAndData` returned in step 6 contains a signature of the 
 
 ## Deploying and using your own paymaster
 
-If you want to deploy your own paymaster, you can deploy [paymaster.sol](./src/paymaster.sol) to your chain of choice.
+If you want to deploy your own paymaster, you can deploy [Paymaster.sol](./src/Paymaster.sol) to your chain of choice.
 In order to generate signatures for your paymaster, there's a Golang package in the [signer](./signer) directory that allows you to sign userOperations that will be accepted by the paymaster (call `UserOperation.PaymasterSign`).
 Of course you can also rewrite this in your language of choice; the Golang package will provide a good example.
