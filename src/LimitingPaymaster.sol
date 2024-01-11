@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 /**
  * A paymaster that uses external service to decide whether to pay for the UserOp.
+ * Also limits spending to "spendMax" per "spentKey", passed in via paymaster data.
  * The paymaster trusts an external signer to sign the transaction.
  * The calling user must pass the UserOp to that external signer first, which performs
  * whatever off-chain verification before signing the UserOp.
@@ -15,13 +16,17 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
  * - the paymaster checks a signature to agree to PAY for GAS.
  * - the account checks a signature to prove identity and account ownership.
  */
-contract Paymaster is BasePaymaster {
+contract LimitingPaymaster is BasePaymaster {
     using UserOperationLib for UserOperation;
 
     address public immutable verifyingSigner;
 
     uint256 private constant VALID_TIMESTAMP_OFFSET = 20;
     uint256 private constant SIGNATURE_OFFSET = VALID_TIMESTAMP_OFFSET + 64;
+    uint256 private constant SPENT_KEY_OFFSET = SIGNATURE_OFFSET + 65;
+    uint256 private constant SPENT_MAX_OFFSET = SPENT_KEY_OFFSET + 4;
+
+    mapping (uint32 => uint96) public spent;
 
     constructor(IEntryPoint _entryPoint, address _verifyingSigner) BasePaymaster(_entryPoint) Ownable() {
         require(address(_entryPoint).code.length > 0, "Paymaster: passed _entryPoint is not currently a contract");
@@ -65,10 +70,13 @@ contract Paymaster is BasePaymaster {
      * paymasterAndData[:20] : address(this)
      * paymasterAndData[20:84] : abi.encode(validUntil, validAfter)
      * paymasterAndData[84:] : signature
+     * paymasterAndData[149:] : spentKey
+     * paymasterAndData[153:] : spentMax
      */
-    function _validatePaymasterUserOp(UserOperation calldata userOp, bytes32 /*userOpHash*/, uint256 /*requiredPreFund*/)
+    function _validatePaymasterUserOp(UserOperation calldata userOp, bytes32 /*userOpHash*/, uint256 requiredPreFund)
     internal view override returns (bytes memory context, uint256 validationData) {
-        (uint48 validUntil, uint48 validAfter, bytes calldata signature) = parsePaymasterAndData(userOp.paymasterAndData);
+        (uint48 validUntil, uint48 validAfter, bytes calldata signature, uint32 spentKey, uint96 spentMax) = parsePaymasterAndData(userOp.paymasterAndData);
+        require(spent[spentKey] + requiredPreFund <= spentMax, "Paymaster: spender funds are depleted");
         // Only support 65-byte signatures, to avoid potential replay attacks.
         require(signature.length == 65, "Paymaster: invalid signature length in paymasterAndData");
         bytes32 hash = ECDSA.toEthSignedMessageHash(getHash(userOp, validUntil, validAfter));
@@ -80,13 +88,21 @@ contract Paymaster is BasePaymaster {
 
         // no need for other on-chain validation: entire UserOp should have been checked
         // by the external service prior to signing it.
-        return ("", _packValidationData(false, validUntil, validAfter));
+        return (abi.encode(spentKey), _packValidationData(false, validUntil, validAfter));
+    }
+
+    function _postOp(PostOpMode mode, bytes calldata context, uint256 actualGasCost) internal override {
+        if (mode != PostOpMode.postOpReverted) {
+            (uint32 spentKey) = abi.decode(context, (uint32));
+            spent[spentKey] += uint96(actualGasCost);
+        }
     }
 
     function parsePaymasterAndData(bytes calldata paymasterAndData)
-    internal pure returns(uint48 validUntil, uint48 validAfter, bytes calldata signature) {
-        (validUntil, validAfter) = abi.decode(paymasterAndData[VALID_TIMESTAMP_OFFSET:SIGNATURE_OFFSET],(uint48, uint48));
-        signature = paymasterAndData[SIGNATURE_OFFSET:];
+    internal pure returns(uint48 validUntil, uint48 validAfter, bytes calldata signature, uint32 spentKey, uint96 spentMax) {
+        (validUntil, validAfter) = abi.decode(paymasterAndData[VALID_TIMESTAMP_OFFSET:SIGNATURE_OFFSET], (uint48, uint48));
+        signature = paymasterAndData[SIGNATURE_OFFSET:SPENT_KEY_OFFSET];
+        (spentKey, spentMax) = abi.decode(paymasterAndData[SPENT_KEY_OFFSET:], (uint32, uint96));
     }
 
     function renounceOwnership() public override view onlyOwner {
