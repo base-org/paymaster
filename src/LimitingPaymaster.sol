@@ -27,6 +27,7 @@ contract LimitingPaymaster is BasePaymaster {
     uint256 private constant SPENT_MAX_OFFSET = SPENT_KEY_OFFSET + 4;
 
     mapping (uint32 => uint96) public spent;
+    mapping (address => bool) public bundlerAllowed;
 
     constructor(IEntryPoint _entryPoint, address _verifyingSigner) BasePaymaster(_entryPoint) Ownable() {
         require(address(_entryPoint).code.length > 0, "Paymaster: passed _entryPoint is not currently a contract");
@@ -75,6 +76,7 @@ contract LimitingPaymaster is BasePaymaster {
      */
     function _validatePaymasterUserOp(UserOperation calldata userOp, bytes32 /*userOpHash*/, uint256 requiredPreFund)
     internal view override returns (bytes memory context, uint256 validationData) {
+        require(bundlerAllowed[tx.origin], "Paymaster: bundler not allowed");
         (uint48 validUntil, uint48 validAfter, bytes calldata signature, uint32 spentKey, uint96 spentMax) = parsePaymasterAndData(userOp.paymasterAndData);
         require(spent[spentKey] + requiredPreFund <= spentMax, "Paymaster: spender funds are depleted");
         // Only support 65-byte signatures, to avoid potential replay attacks.
@@ -113,6 +115,14 @@ contract LimitingPaymaster is BasePaymaster {
         require(newOwner != address(0), "Paymaster: owner cannot be address(0)");
         require(newOwner != verifyingSigner, "Paymaster: owner cannot be the verifyingSigner");
         _transferOwnership(newOwner);
+    }
+
+    function addBundler(address bundler) public onlyOwner {
+        bundlerAllowed[bundler] = true;
+    }
+
+    function removeBundler(address bundler) public onlyOwner {
+        bundlerAllowed[bundler] = false;
     }
 
     receive() external payable {
