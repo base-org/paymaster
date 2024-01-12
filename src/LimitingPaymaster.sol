@@ -38,7 +38,7 @@ contract LimitingPaymaster is BasePaymaster {
      * note that this signature covers all fields of the UserOperation, except the "paymasterAndData",
      * which will carry the signature itself.
      */
-    function getHash(UserOperation calldata userOp, uint48 validUntil, uint48 validAfter)
+    function getHash(UserOperation calldata userOp, uint48 validUntil, uint48 validAfter, uint32 spentKey, uint96 spentMax, bool allowAnyBundler)
     public view returns (bytes32) {
         // can't use userOp.hash(), since it contains also the paymasterAndData itself.
         return keccak256(
@@ -55,7 +55,10 @@ contract LimitingPaymaster is BasePaymaster {
                 block.chainid,
                 address(this),
                 validUntil,
-                validAfter
+                validAfter,
+                spentKey,
+                spentMax,
+                allowAnyBundler
             )
         );
     }
@@ -66,18 +69,18 @@ contract LimitingPaymaster is BasePaymaster {
      * paymasterAndData[:20] : address(this)
      * paymasterAndData[20:26] : validUntil
      * paymasterAndData[26:32] : validAfter
-     * paymasterAndData[32:97] : signature
-     * paymasterAndData[97:101] : spendKey
-     * paymasterAndData[101:113] : spendMax
-     * paymasterAndData[113] : allowAnyBundler
+     * paymasterAndData[32:36] : spendKey
+     * paymasterAndData[36:48] : spendMax
+     * paymasterAndData[48] : allowAnyBundler
+     * paymasterAndData[49:114] : signature
      */
     function _validatePaymasterUserOp(UserOperation calldata userOp, bytes32 /*userOpHash*/, uint256 requiredPreFund)
     internal view override returns (bytes memory context, uint256 validationData) {
-        (uint48 validUntil, uint48 validAfter, bytes calldata signature, uint32 spentKey, uint96 spentMax, bool allowAnyBundler) = parsePaymasterAndData(userOp.paymasterAndData);
+        (uint48 validUntil, uint48 validAfter, uint32 spentKey, uint96 spentMax, bool allowAnyBundler, bytes calldata signature) = parsePaymasterAndData(userOp.paymasterAndData);
         require(spent[spentKey] + requiredPreFund <= spentMax, "Paymaster: spender funds are depleted");
         // Only support 65-byte signatures, to avoid potential replay attacks.
         require(signature.length == 65, "Paymaster: invalid signature length in paymasterAndData");
-        bytes32 hash = ECDSA.toEthSignedMessageHash(getHash(userOp, validUntil, validAfter));
+        bytes32 hash = ECDSA.toEthSignedMessageHash(getHash(userOp, validUntil, validAfter, spentKey, spentMax, allowAnyBundler));
 
         // don't revert on signature failure: return SIG_VALIDATION_FAILED
         if (verifyingSigner != ECDSA.recover(hash, signature)) {
@@ -100,13 +103,13 @@ contract LimitingPaymaster is BasePaymaster {
     }
 
     function parsePaymasterAndData(bytes calldata paymasterAndData)
-    internal pure returns(uint48 validUntil, uint48 validAfter, bytes calldata signature, uint32 spentKey, uint96 spentMax, bool allowAnyBundler) {
+    internal pure returns(uint48 validUntil, uint48 validAfter, uint32 spentKey, uint96 spentMax, bool allowAnyBundler, bytes calldata signature) {
         validUntil = uint48(bytes6(paymasterAndData[20:26]));
         validAfter = uint48(bytes6(paymasterAndData[26:32]));
-        signature = paymasterAndData[32:97];
-        spentKey = uint32(bytes4(paymasterAndData[97:101]));
-        spentMax = uint96(bytes12(paymasterAndData[101:113]));
-        allowAnyBundler = paymasterAndData.length > 113 && paymasterAndData[113] > 0;
+        spentKey = uint32(bytes4(paymasterAndData[32:36]));
+        spentMax = uint96(bytes12(paymasterAndData[36:48]));
+        allowAnyBundler = paymasterAndData[48] > 0;
+        signature = paymasterAndData[49:];
     }
 
     function renounceOwnership() public override view onlyOwner {
