@@ -24,7 +24,6 @@ contract LimitingPaymaster is BasePaymaster {
     uint256 private constant VALID_TIMESTAMP_OFFSET = 20;
     uint256 private constant SIGNATURE_OFFSET = VALID_TIMESTAMP_OFFSET + 64;
     uint256 private constant SPENT_KEY_OFFSET = SIGNATURE_OFFSET + 65;
-    uint256 private constant SPENT_MAX_OFFSET = SPENT_KEY_OFFSET + 4;
 
     mapping (uint32 => uint96) public spent;
     mapping (address => bool) public bundlerAllowed;
