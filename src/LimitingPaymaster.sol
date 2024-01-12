@@ -21,10 +21,6 @@ contract LimitingPaymaster is BasePaymaster {
 
     address public immutable verifyingSigner;
 
-    uint256 private constant VALID_TIMESTAMP_OFFSET = 20;
-    uint256 private constant SIGNATURE_OFFSET = VALID_TIMESTAMP_OFFSET + 64;
-    uint256 private constant SPENT_KEY_OFFSET = SIGNATURE_OFFSET + 65;
-
     mapping (uint32 => uint96) public spent;
     mapping (address => bool) public bundlerAllowed;
 
@@ -68,13 +64,16 @@ contract LimitingPaymaster is BasePaymaster {
      * verify our external signer signed this request.
      * the "paymasterAndData" is expected to be the paymaster and a signature over the entire request params
      * paymasterAndData[:20] : address(this)
-     * paymasterAndData[20:84] : abi.encode(validUntil, validAfter)
-     * paymasterAndData[84:] : signature
-     * paymasterAndData[149:213] : abi.encode(spentKey, spentMax)
+     * paymasterAndData[20:26] : validUntil
+     * paymasterAndData[26:32] : validAfter
+     * paymasterAndData[32:97] : signature
+     * paymasterAndData[97:101] : spendKey
+     * paymasterAndData[101:113] : spendMax
+     * paymasterAndData[113] : allowAnyBundler
      */
     function _validatePaymasterUserOp(UserOperation calldata userOp, bytes32 /*userOpHash*/, uint256 requiredPreFund)
     internal view override returns (bytes memory context, uint256 validationData) {
-        (uint48 validUntil, uint48 validAfter, bytes calldata signature, uint32 spentKey, uint96 spentMax) = parsePaymasterAndData(userOp.paymasterAndData);
+        (uint48 validUntil, uint48 validAfter, bytes calldata signature, uint32 spentKey, uint96 spentMax, bool allowAnyBundler) = parsePaymasterAndData(userOp.paymasterAndData);
         require(spent[spentKey] + requiredPreFund <= spentMax, "Paymaster: spender funds are depleted");
         // Only support 65-byte signatures, to avoid potential replay attacks.
         require(signature.length == 65, "Paymaster: invalid signature length in paymasterAndData");
@@ -87,23 +86,27 @@ contract LimitingPaymaster is BasePaymaster {
 
         // no need for other on-chain validation: entire UserOp should have been checked
         // by the external service prior to signing it.
-        return (abi.encode(spentKey), _packValidationData(false, validUntil, validAfter));
+        return (abi.encode(spentKey, allowAnyBundler), _packValidationData(false, validUntil, validAfter));
     }
 
     function _postOp(PostOpMode mode, bytes calldata context, uint256 actualGasCost) internal override {
+        (uint32 spentKey, bool allowAnyBundler) = abi.decode(context, (uint32, bool));
+        // unfortunately tx.origin is not allowed in validation, so we check here
+        require(allowAnyBundler || bundlerAllowed[tx.origin], "Paymaster: bundler not allowed");
+
         if (mode != PostOpMode.postOpReverted) {
-            // unfortunately tx.origin is not allowed in validation, so we check here
-            require(bundlerAllowed[tx.origin], "Paymaster: bundler not allowed");
-            (uint32 spentKey) = abi.decode(context, (uint32));
             spent[spentKey] += uint96(actualGasCost);
         }
     }
 
     function parsePaymasterAndData(bytes calldata paymasterAndData)
-    internal pure returns(uint48 validUntil, uint48 validAfter, bytes calldata signature, uint32 spentKey, uint96 spentMax) {
-        (validUntil, validAfter) = abi.decode(paymasterAndData[VALID_TIMESTAMP_OFFSET:SIGNATURE_OFFSET], (uint48, uint48));
-        signature = paymasterAndData[SIGNATURE_OFFSET:SPENT_KEY_OFFSET];
-        (spentKey, spentMax) = abi.decode(paymasterAndData[SPENT_KEY_OFFSET:], (uint32, uint96));
+    internal pure returns(uint48 validUntil, uint48 validAfter, bytes calldata signature, uint32 spentKey, uint96 spentMax, bool allowAnyBundler) {
+        validUntil = uint48(bytes6(paymasterAndData[20:26]));
+        validAfter = uint48(bytes6(paymasterAndData[26:32]));
+        signature = paymasterAndData[32:97];
+        spentKey = uint32(bytes4(paymasterAndData[97:101]));
+        spentMax = uint96(bytes12(paymasterAndData[101:113]));
+        allowAnyBundler = paymasterAndData.length > 113 && paymasterAndData[113] > 0;
     }
 
     function renounceOwnership() public override view onlyOwner {
