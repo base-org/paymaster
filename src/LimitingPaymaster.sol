@@ -70,12 +70,10 @@ contract LimitingPaymaster is BasePaymaster {
      * paymasterAndData[:20] : address(this)
      * paymasterAndData[20:84] : abi.encode(validUntil, validAfter)
      * paymasterAndData[84:] : signature
-     * paymasterAndData[149:] : spentKey
-     * paymasterAndData[153:] : spentMax
+     * paymasterAndData[149:213] : abi.encode(spentKey, spentMax)
      */
     function _validatePaymasterUserOp(UserOperation calldata userOp, bytes32 /*userOpHash*/, uint256 requiredPreFund)
     internal view override returns (bytes memory context, uint256 validationData) {
-        require(bundlerAllowed[tx.origin], "Paymaster: bundler not allowed");
         (uint48 validUntil, uint48 validAfter, bytes calldata signature, uint32 spentKey, uint96 spentMax) = parsePaymasterAndData(userOp.paymasterAndData);
         require(spent[spentKey] + requiredPreFund <= spentMax, "Paymaster: spender funds are depleted");
         // Only support 65-byte signatures, to avoid potential replay attacks.
@@ -94,6 +92,8 @@ contract LimitingPaymaster is BasePaymaster {
 
     function _postOp(PostOpMode mode, bytes calldata context, uint256 actualGasCost) internal override {
         if (mode != PostOpMode.postOpReverted) {
+            // unfortunately tx.origin is not allowed in validation, so we check here
+            require(bundlerAllowed[tx.origin], "Paymaster: bundler not allowed");
             (uint32 spentKey) = abi.decode(context, (uint32));
             spent[spentKey] += uint96(actualGasCost);
         }
