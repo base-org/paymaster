@@ -12,4 +12,5 @@ remappings = [
     '@account-abstraction/=lib/account-abstraction/contracts',
     '@solady/=lib/solady/src',
 ]
+via_ir = true
 
