@@ -19,6 +19,9 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 contract LimitingPaymaster is BasePaymaster {
     using UserOperationLib for UserOperation;
 
+    uint256 public constant newSenderPostOpOverhead = 23231;
+    uint256 public constant oldSenderPostOpOverhead = 6143;
+
     address public immutable verifyingSigner;
 
     mapping (uint32 => uint96) public spent;
@@ -89,16 +92,22 @@ contract LimitingPaymaster is BasePaymaster {
 
         // no need for other on-chain validation: entire UserOp should have been checked
         // by the external service prior to signing it.
-        return (abi.encode(spentKey, allowAnyBundler), _packValidationData(false, validUntil, validAfter));
+        return (_packContextData(userOp, spentKey, allowAnyBundler), _packValidationData(false, validUntil, validAfter));
+    }
+
+    function _packContextData(UserOperation calldata userOp, uint32 spentKey, bool allowAnyBundler) internal pure returns (bytes memory) {
+        return abi.encode(userOp.maxFeePerGas, userOp.maxPriorityFeePerGas, spentKey, allowAnyBundler);
     }
 
     function _postOp(PostOpMode mode, bytes calldata context, uint256 actualGasCost) internal override {
-        (uint32 spentKey, bool allowAnyBundler) = abi.decode(context, (uint32, bool));
+        (uint256 maxFeePerGas, uint256 maxPriorityFeePerGas, uint32 spentKey, bool allowAnyBundler) = abi.decode(context, (uint256, uint256, uint32, bool));
         // unfortunately tx.origin is not allowed in validation, so we check here
         require(allowAnyBundler || bundlerAllowed[tx.origin], "Paymaster: bundler not allowed");
 
         if (mode != PostOpMode.postOpReverted) {
-            spent[spentKey] += uint96(actualGasCost);
+            uint256 overhead = spent[spentKey] == 0 ? newSenderPostOpOverhead : oldSenderPostOpOverhead;
+            uint256 gasPrice = min(maxFeePerGas, maxPriorityFeePerGas + block.basefee);
+            spent[spentKey] += uint96(actualGasCost + overhead*gasPrice);
         }
     }
 
@@ -128,6 +137,10 @@ contract LimitingPaymaster is BasePaymaster {
 
     function removeBundler(address bundler) public onlyOwner {
         bundlerAllowed[bundler] = false;
+    }
+
+    function min(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a < b ? a : b;
     }
 
     receive() external payable {
