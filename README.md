@@ -9,7 +9,6 @@ _(More coming soon)_
 
 | Network      | Address                                                                                                                            |
 |--------------|------------------------------------------------------------------------------------------------------------------------------------|
-| Base Goerli  | [0x88Ad254d5b1a95C9Bd2ae5F87E2BE27d95d86c2f](https://goerli-explorer.base.org/address/0x88Ad254d5b1a95C9Bd2ae5F87E2BE27d95d86c2f)  |
 | Base Sepolia | [0xf5d253B62543C6Ef526309D497f619CeF95aD430](https://sepolia-explorer.base.org/address/0xf5d253B62543C6Ef526309D497f619CeF95aD430) |
 
 ### Obtaining a signature for use with the paymaster contract
@@ -42,7 +41,7 @@ curl "https://paymaster.base.org" \
       "maxPriorityFeePerGas": "0x1"
     },
     "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
-    "0x14A33"
+    "0x14A34"
   ]
 }
 '
@@ -79,7 +78,7 @@ curl "https://paymaster.base.org" \
       "maxPriorityFeePerGas": "0x1"
     },
     "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
-    "0x14A33"
+    "0x14A34"
   ]
 }
 '
